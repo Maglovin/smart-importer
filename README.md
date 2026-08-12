@@ -1,11 +1,17 @@
 # 🧮 Importador — importación inteligente de Excel/CSV
 
-Motor de importación de datos **reutilizable en cualquier app**: detecta columnas del archivo, sugiere el mapeo contra un schema declarativo, transforma/valida con prueba en seco y — con `@importador/db` — **lee el esquema de tu base de datos y resuelve las relaciones (FKs) automáticamente**.
+[![CI](https://github.com/Maglovin/smart-importer/actions/workflows/ci.yml/badge.svg)](https://github.com/Maglovin/smart-importer/actions/workflows/ci.yml)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Vue](https://img.shields.io/badge/Vue-3.x-42b883?logo=vue.js&logoColor=white)](https://vuejs.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+Motor de importación de datos **reutilizable en cualquier app**: detecta columnas del archivo, sugiere el mapeo contra un schema declarativo, transforma/valida con prueba en seco y — con `@importador/db` — **lee el esquema de tu base de datos, resuelve las relaciones (FKs) y evita duplicados automáticamente**.
 
 > Nació del importador hardcodeado del histórico de un taller mecánico (FICHA CLIENTES.xlsx → clientes/vehículos/OTs) y abstrae la parte reutilizable: el mapeo pasa de ser **código** a ser **datos + UI**.
 
 ```
-npm test   # 15 tests (core + db)
+npm test   # 19 tests (core + db)
 ```
 
 ## ✨ Qué hace
@@ -103,6 +109,35 @@ Qué resuelve por ti:
 - **Cache entre filas** — una misma persona/patente repetida se resuelve una sola vez.
 - **`crearRelacionados: false`** — falla la fila en vez de crear padres (modo estricto).
 
+### 🚫 Dedupe: no llenar la BD de duplicados
+
+Pasa las columnas que forman la clave natural de la tabla y el importador **omite (o actualiza) las filas que ya existen**:
+
+```ts
+// Clientes: no crear dos veces al mismo DNI
+await importarEnTabla(adapter, tablaClientes, filas, {
+  dedupe: ['dni'],
+});
+
+// Vehículos: una sola vez por patente, y si ya existe se actualiza (upsert)
+await importarEnTabla(adapter, tablaVehiculos, filas, {
+  dedupe: ['patente'],
+  actualizarDuplicados: true,   // en vez de omitir, actualiza la fila existente
+});
+
+// Clave compuesta: coincidencia AND en todas las columnas
+await importarEnTabla(adapter, tablaClientes, filas, {
+  dedupe: ['nombre', 'telefono'],
+});
+```
+
+Comportamiento:
+
+- **`dedupe: ['columna']`** — compara contra lo existente (case-insensitive); si coincide, la fila se **omite** y cuenta en `resultado.duplicados`.
+- **`actualizarDuplicados: true`** — en vez de omitir, hace **upsert**: actualiza la fila existente con los datos nuevos (requiere que el adaptador implemente `actualizar()`).
+- **Clave incompleta** (valor vacío en alguna columna clave) → no se puede comparar, la fila se inserta igual.
+- Las **FKs no se tocan** en la actualización: el update por clave natural solo toca columnas normales.
+
 El RPC `schema_importable` lo provee cada app con una migración SQL (ejemplo en la sección de adapters).
 
 ## 📐 El contrato: schema declarativo
@@ -130,8 +165,10 @@ Cada tipo trae su transformación (serial Excel → ISO, importe español, km co
 
 ```bash
 npm test                 # 9 tests core: transformadores, detección, mapeo, dry-run
-npm run test -w @importador/db   # 6 tests db: schema desde tabla, FKs, padres, regresión TDZ
+npm run test -w @importador/db   # 10 tests db: schema desde tabla, FKs, padres, dedupe, regresión TDZ
 ```
+
+CI (GitHub Actions) ejecuta build + tests en Node 20 y 22 en cada push/PR.
 
 ## 🛣 Roadmap
 
@@ -139,10 +176,11 @@ npm run test -w @importador/db   # 6 tests db: schema desde tabla, FKs, padres, 
 - [x] CLI con schemas de ejemplo (clientes / vehículos / ots)
 - [x] Componente Vue (stepper 4 pasos)
 - [x] `@importador/db`: esquema desde BD, FKs automáticas, creación de padres
+- [x] **Dedupe/upsert por clave natural** (evitar duplicados en la BD)
+- [x] CI (GitHub Actions, Node 20/22) + badges
 - [x] Demo standalone + Excel de ejemplo
 - [ ] Integración en producción (TallerApp: importador de histórico completo)
 - [ ] Google Sheets como origen
-- [ ] Dedupe/upsert por clave (evitar duplicados)
 - [ ] Publicación npm (`@importador/core`, `@importador/db`, `@importador/vue`)
 
 ## 📄 Licencia

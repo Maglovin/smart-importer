@@ -7,8 +7,8 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @importador/core && npm run build -w @importador/cli",
-    "test": "npm run test -w @importador/core",
+    "build": "npm run build -w @importador/core && npm run build -w @importador/db && npm run build -w @importador/vue && npm run build -w @importador/cli",
+    "test": "npm run test -w @importador/core && npm run test -w @importador/db",
     "demo": "npm run demo -w @importador/cli"
   },
   "devDependencies": {

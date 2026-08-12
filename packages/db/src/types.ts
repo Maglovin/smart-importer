@@ -46,8 +46,18 @@ export interface DbAdapter {
   leerEsquema(): Promise<DbSchema>;
   /** Busca el id de una fila por columna de resolución (case-insensitive). */
   buscarId(tabla: string, columna: string, valor: RawValue): Promise<string | null>;
+  /**
+   * Busca una fila que coincida con TODAS las claves (AND, case-insensitive).
+   * Opcional: solo necesario si se usa `dedupe`. Devuelve null si no existe.
+   */
+  buscarDuplicado?(tabla: string, claves: Record<string, unknown>): Promise<string | null>;
   /** Inserta una fila y devuelve su id. */
   insertar(tabla: string, fila: Record<string, unknown>): Promise<string>;
+  /**
+   * Actualiza una fila existente por id. Opcional: solo necesario si se usa
+   * `dedupe` + `actualizarDuplicados`.
+   */
+  actualizar?(tabla: string, id: string, fila: Record<string, unknown>): Promise<void>;
 }
 
 /** Configuración del sink genérico. */
@@ -60,12 +70,28 @@ export interface DbImportOptions {
   maxRows?: number;
   /** Mapa de transformaciones personalizadas por columna: tabla.columna → fn. */
   transform?: Record<string, (v: unknown) => unknown>;
+  /**
+   * Columnas que forman la clave natural para detectar duplicados
+   * (p.ej. ['patente'] en vehículos, ['dni'] en clientes). Si la fila
+   * entrante coincide con una existente en TODAS esas columnas, se omite
+   * (o se actualiza si `actualizarDuplicados` es true).
+   */
+  dedupe?: string[];
+  /**
+   * Si hay duplicado y el adaptador soporta `actualizar()`, actualiza la
+   * fila existente en vez de omitirla (upsert por clave natural).
+   */
+  actualizarDuplicados?: boolean;
 }
 
 /** Resultado de importar un lote en una tabla. */
 export interface DbImportResult {
   insertados: number;
   omitidos: number;
+  /** Filas saltadas porque ya existía un registro con la misma clave. */
+  duplicados: number;
+  /** Filas actualizadas en vez de insertadas (dedupe + actualizarDuplicados). */
+  actualizados: number;
   errores: number;
   detalle: string[];
   /** ids de las filas insertadas (orden de entrada). */

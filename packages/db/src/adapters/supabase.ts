@@ -20,6 +20,7 @@ export interface SupabaseQuery {
   ilike(col: string, val: string): SupabaseQuery;
   limit(n: number): SupabaseQuery;
   single(): Promise<{ data: unknown; error: { message: string } | null }>;
+  update(fila: Record<string, unknown>): SupabaseQuery;
   insert(fila: Record<string, unknown>): SupabaseQuery;
 }
 
@@ -96,6 +97,31 @@ export function supabaseAdapter(sb: SupabaseLike, rpcNombre = 'schema_importable
         .single();
       if (error) throw new Error(`${tabla}: ${error.message}`);
       return (data as { id: string }).id;
+    },
+
+    async buscarDuplicado(tabla, claves): Promise<string | null> {
+      // Coincidencia AND case-insensitive sobre todas las claves
+      let query = sb.from(tabla).select('id');
+      for (const [col, val] of Object.entries(claves)) {
+        query = query.ilike(col, String(val));
+      }
+      const { data, error } = await query
+        .limit(1)
+        .single()
+        // single() lanza error si no hay filas → "no existe"
+        .catch(() => ({ data: null, error: null }));
+      if (error || !data) return null;
+      return (data as { id: string }).id;
+    },
+
+    async actualizar(tabla, id, fila): Promise<void> {
+      const { error } = await sb
+        .from(tabla)
+        .update(fila)
+        .eq('id', id)
+        .select('id')
+        .single();
+      if (error) throw new Error(`${tabla}: ${error.message}`);
     },
   };
 }

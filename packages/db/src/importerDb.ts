@@ -231,6 +231,10 @@ export async function insertarConRelaciones(
 /**
  * Importa un lote de filas (ya transformadas por el ImportStepper, con
  * claves = nombres de columna) en la tabla destino, resolviendo FKs.
+ *
+ * Si `opts.dedupe` trae columnas clave, cada fila se compara contra lo ya
+ * existente: si coincide en TODAS las claves se omite (o se actualiza si
+ * `actualizarDuplicados`), evitando llenar la BD de duplicados.
  */
 export async function importarEnTabla(
   adapter: DbAdapter,
@@ -238,13 +242,64 @@ export async function importarEnTabla(
   filas: Array<Record<string, unknown>>,
   opts: DbImportOptions = {},
 ): Promise<DbImportResult> {
-  const resumen: DbImportResult = { insertados: 0, omitidos: 0, errores: 0, detalle: [], ids: [] };
+  const resumen: DbImportResult = {
+    insertados: 0,
+    omitidos: 0,
+    duplicados: 0,
+    actualizados: 0,
+    errores: 0,
+    detalle: [],
+    ids: [],
+  };
   const cache: ResolucionCache = new Map();
   const max = opts.maxRows ?? 10_000;
   const lote = filas.slice(0, max);
+  const clavesDedupe = opts.dedupe ?? [];
 
   for (const fila of lote) {
     try {
+      // Dedupe: si la fila trae valores para todas las columnas clave,
+      // buscar un registro existente que coincida en todas (AND).
+      if (clavesDedupe.length > 0) {
+        const claves: Record<string, unknown> = {};
+        let completas = true;
+        for (const col of clavesDedupe) {
+          const v = fila[col];
+          if (v === null || v === undefined || v === '') {
+            completas = false;
+            break;
+          }
+          claves[col] = v;
+        }
+        if (completas && adapter.buscarDuplicado) {
+          const existente = await adapter.buscarDuplicado(tabla.nombre, claves);
+          if (existente) {
+            if (opts.actualizarDuplicados && adapter.actualizar) {
+              const payload: Record<string, unknown> = {};
+              for (const col of tabla.columnas) {
+                if (col.generada || col.pk) continue;
+                const fk = tabla.fks.find((f) => f.columna === col.nombre);
+                if (fk) continue; // las FKs no se tocan en el update por clave natural
+                if (!(col.nombre in fila)) continue;
+                const valor = fila[col.nombre];
+                if (valor === null || valor === undefined || valor === '') continue;
+                const fn = opts.transform?.[`${tabla.nombre}.${col.nombre}`];
+                payload[col.nombre] = fn ? fn(valor) : valor;
+              }
+              await adapter.actualizar(tabla.nombre, existente, payload);
+              resumen.actualizados++;
+              resumen.omitidos++;
+              resumen.ids.push(existente);
+              continue;
+            }
+            resumen.duplicados++;
+            resumen.omitidos++;
+            resumen.ids.push(existente);
+            continue;
+          }
+        }
+      }
+
       const id = await insertarConRelaciones(adapter, tabla, fila, opts, cache);
       resumen.insertados++;
       resumen.ids.push(id);
