@@ -82,6 +82,13 @@ export interface DbImportOptions {
    * fila existente en vez de omitirla (upsert por clave natural).
    */
   actualizarDuplicados?: boolean;
+  /**
+   * Esquema precargado (caché interna). El motor lo rellena en la primera
+   * resolución de FK para no llamar a `leerEsquema()` por cada fila que
+   * necesita crear un padre. Puedes pre-cargarlo tú para saltarte la
+   * primera llamada: `{ esquema: await adapter.leerEsquema() }`.
+   */
+  esquema?: DbSchema;
 }
 
 /** Resultado de importar un lote en una tabla. */

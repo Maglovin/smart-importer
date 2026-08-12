@@ -25,14 +25,23 @@ export function serialAFecha(v: RawValue): string | null {
 }
 
 /**
- * Importe en formato español: '438,02 II' / '135+220' / '1.234,56' -> número.
- * El '+' es separador decimal en el histórico ('135+220' = 135,22 €).
+ * Interpreta un número escrito en formato español/europeo y devuelve el
+ * valor numérico, o null si no es interpretable.
+ *
+ * Casos que resuelve:
+ *   - Separador de miles y decimales: '1.234,56' → 1234.56, '181,854' → 181854
+ *   - '+' como separador decimal del histórico ('135+220' = 135,22 €)
+ *   - Texto alrededor: '438,02 II' → 438.02, '181,854 KM' → 181854
+ *
+ * @param miles si true, coma o punto con EXACTAMENTE 3 dígitos se tratan
+ *        como separador de miles (kilometraje); si false, como decimal (importe).
  */
-export function extraeImporte(v: RawValue): number | null {
+export function parseNumberES(v: RawValue, opts: { miles?: boolean } = {}): number | null {
   if (v === null || v === undefined) return null;
   let s = String(v).trim();
   if (!s) return null;
 
+  // '+' separador decimal del histórico: '135+220' -> '135.220'
   if (s.includes('+')) {
     const partes = s.split('+');
     const digitos = (x: string) => x.replace(/[^\d]/g, '');
@@ -49,6 +58,12 @@ export function extraeImporte(v: RawValue): number | null {
   let s2 = s.replace(/[^\d,.\-]/g, '');
   if (!s2) return null;
 
+  // Desambiguar coma/punto: el último separador que aparece es el decimal
+  const esMiles = (x: string, sep: string) => {
+    const partes = x.split(sep);
+    return partes.length === 2 && partes[1].length === 3;
+  };
+
   if (s2.includes(',') && s2.includes('.')) {
     if (s2.lastIndexOf(',') > s2.lastIndexOf('.')) {
       s2 = s2.replace(/\./g, '').replace(',', '.');
@@ -56,11 +71,27 @@ export function extraeImporte(v: RawValue): number | null {
       s2 = s2.replace(/,/g, '');
     }
   } else if (s2.includes(',')) {
-    s2 = s2.replace(',', '.');
+    if (opts.miles && esMiles(s2, ',')) s2 = s2.replace(/,/g, '');
+    else s2 = s2.replace(',', '.');
+  } else if (s2.includes('.') && opts.miles && esMiles(s2, '.')) {
+    s2 = s2.replace(/\./g, '');
   }
 
   const val = parseFloat(s2);
   return Number.isFinite(val) && val > 0 ? Math.round(val * 100) / 100 : null;
+}
+
+/**
+ * Importe en formato español: '438,02 II' / '135+220' / '1.234,56' -> número.
+ * El '+' es separador decimal en el histórico ('135+220' = 135,22 €).
+ */
+export function extraeImporte(v: RawValue): number | null {
+  return parseNumberES(v, { miles: false });
+}
+
+/** '181,854 KM' / '157.578' -> 181854 / 157578 (miles) o null. */
+export function parseaKilometros(v: RawValue): number | null {
+  return parseNumberES(v, { miles: true });
 }
 
 /** Nombre normalizado: '  JAVIER  PARDO  ' -> 'JAVIER PARDO'. */
@@ -121,27 +152,6 @@ export function limpiaPatente(v: RawValue): string | null {
   const t = limpia(v);
   if (t === null) return null;
   return String(t).replace(/\s+/g, ' ').toUpperCase();
-}
-
-/** '181,854 KM' / '157.578' -> 181854 / 157578 (miles) o null. */
-export function parseaKilometros(v: RawValue): number | null {
-  const t = limpia(v);
-  if (t === null) return null;
-  let s = String(t).replace(/[^\d,.]/g, '');
-  if (!s) return null;
-  if (s.includes(',') && s.includes('.')) {
-    s = s.replace(/\./g, '').replace(',', '.');
-  } else if (s.includes(',')) {
-    const partes = s.split(',');
-    if (partes.length === 2 && partes[1].length === 3) s = s.replace(',', '');
-    else s = s.replace(',', '.');
-  } else if (s.includes('.')) {
-    // Punto como separador de miles si hay exactamente 3 decimales
-    const partes = s.split('.');
-    if (partes.length === 2 && partes[1].length === 3) s = s.replace(/\./g, '');
-  }
-  const val = parseInt(s, 10);
-  return Number.isFinite(val) && val > 0 ? val : null;
 }
 
 export function limpiaEmail(v: RawValue): string | null {

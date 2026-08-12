@@ -145,8 +145,14 @@ async function resolverRelacion(
     return null;
   }
 
-  // Crear el registro padre: necesitamos su esquema
-  const schema = await adapter.leerEsquema();
+  // Crear el registro padre: necesitamos su esquema.
+  // Cache: leerEsquema() se llama UNA vez por importación (no por fila),
+  // porque el mismo objeto `opts` viaja por todas las filas del lote.
+  let schema = opts.esquema;
+  if (!schema) {
+    schema = await adapter.leerEsquema();
+    opts.esquema = schema;
+  }
   const padre = schema.find((t) => t.nombre === fk.tabla_ref);
   if (!padre) {
     cache.set(key, null);

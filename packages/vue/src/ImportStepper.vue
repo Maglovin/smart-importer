@@ -84,16 +84,9 @@ async function loadFile(file: File) {
 
     if (ext === 'xlsx' || ext === 'xls') {
       sheetNamesList.value = sheetNames(buffer);
-      if (sheetNamesList.value.length > 1) {
-        // Usuario elige hoja
-        fileName.value = file.name;
-        sheetIndex.value = 0;
-        await parseSheet(buffer, 0);
-      } else {
-        fileName.value = file.name;
-        sheetIndex.value = 0;
-        await parseSheet(buffer, 0);
-      }
+      fileName.value = file.name;
+      sheetIndex.value = 0;
+      await parseSheet(buffer, 0);
     } else if (ext === 'csv') {
       parsed.value = await parseCsvFile(buffer);
       fileName.value = file.name;

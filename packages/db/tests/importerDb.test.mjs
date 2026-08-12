@@ -57,6 +57,8 @@ const esquemaTaller = [
 class MockAdapter {
   tablas;
   nextId = 1;
+  /** Contador de llamadas a leerEsquema (para verificar el cache). */
+  llamadasEsquema = 0;
 
   constructor() {
     this.tablas = new Map();
@@ -64,6 +66,7 @@ class MockAdapter {
   }
 
   async leerEsquema() {
+    this.llamadasEsquema++;
     return JSON.parse(JSON.stringify(esquemaTaller));
   }
 
@@ -315,4 +318,24 @@ test('dedupe multi-columna: requiere coincidencia en TODAS las claves', async ()
   assert.equal(res.insertados, 2);
   assert.equal(res.duplicados, 1);
   assert.equal(adapter.conteo('clientes'), 2);
+});
+
+test('cache: leerEsquema se llama UNA vez por importación (no por fila)', async () => {
+  const adapter = new MockAdapter();
+  const ot = esquemaTaller.find((t) => t.nombre === 'ordenes_trabajo');
+
+  // 5 filas con 5 clientes+vehículos NUEVOS: cada uno dispara creación de
+  // padre, que antes llamaba a leerEsquema() por cada uno.
+  const filas = ['A', 'B', 'C', 'D', 'E'].map((c) => ({
+    cliente_id: `CLIENTE ${c}`,
+    vehiculo_id: `ZZ${c}999`,
+    descripcion: 'X',
+  }));
+  const res = await importarEnTabla(adapter, ot, filas);
+
+  assert.equal(res.insertados, 5);
+  assert.equal(adapter.conteo('clientes'), 5);
+  assert.equal(adapter.conteo('vehiculos'), 5);
+  // Solo 1 llamada a leerEsquema para todo el lote
+  assert.equal(adapter.llamadasEsquema, 1);
 });
