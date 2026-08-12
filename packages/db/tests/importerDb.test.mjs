@@ -10,6 +10,7 @@ import {
   importarEnTabla,
   insertarConRelaciones,
   tipoImportador,
+  parseSchemaRaw,
 } from '../dist/index.js';
 
 // ── Esquema de ejemplo (taller) ────────────────────────────────
@@ -180,4 +181,52 @@ test('insertarConRelaciones: respeta transformaciones por columna', async () => 
 
   const fila = adapter.tablas.get('clientes').get(id);
   assert.equal(fila.nombre, 'JUAN');
+});
+
+test('parseSchemaRaw: parsea el jsonb del RPC y resuelve claves naturales (regresión TDZ)', () => {
+  // Simula la salida exacta del RPC schema_importable (con FKs).
+  // Antes del fix, el map() referenciaba `tablas` dentro de su propio
+  // inicializador → "Cannot access 'tablas' before initialization".
+  const raw = [
+    {
+      tabla: 'clientes',
+      orden: 1,
+      columnas: [
+        { nombre: 'id', tipo: 'uuid', not_null: true, pk: true, generada: true, ordinal: 1 },
+        { nombre: 'nombre', tipo: 'text', not_null: true, pk: false, generada: false, ordinal: 2 },
+        { nombre: 'telefono', tipo: 'text', not_null: false, pk: false, generada: false, ordinal: 3 },
+      ],
+      fks: [],
+    },
+    {
+      tabla: 'vehiculos',
+      orden: 2,
+      columnas: [
+        { nombre: 'id', tipo: 'uuid', not_null: true, pk: true, generada: true, ordinal: 1 },
+        { nombre: 'cliente_id', tipo: 'uuid', not_null: true, pk: false, generada: false, ordinal: 2 },
+        { nombre: 'patente', tipo: 'text', not_null: true, pk: false, generada: false, ordinal: 3 },
+        { nombre: 'marca', tipo: 'text', not_null: false, pk: false, generada: false, ordinal: 4 },
+      ],
+      fks: [{ nombre: 'vehiculos_cliente_id_fkey', columna: 'cliente_id', tabla_ref: 'clientes', columna_ref: 'id' }],
+    },
+  ];
+
+  const schema = parseSchemaRaw(raw);
+  assert.equal(schema.length, 2);
+
+  const vehiculos = schema.find((t) => t.nombre === 'vehiculos');
+  assert.equal(vehiculos.fks.length, 1);
+  // La FK a clientes se resuelve por su clave natural (nombre)
+  assert.equal(vehiculos.fks[0].columna_resolucion, 'nombre');
+
+  // FK a tabla desconocida → 'id'
+  const rawConFkDesconocida = [
+    {
+      tabla: 'a',
+      columnas: [{ nombre: 'id', tipo: 'uuid', not_null: true, pk: true, generada: true }],
+      fks: [{ nombre: 'a_b_fkey', columna: 'b_id', tabla_ref: 'no_existe', columna_ref: 'id' }],
+    },
+  ];
+  const schema2 = parseSchemaRaw(rawConFkDesconocida);
+  assert.equal(schema2[0].fks[0].columna_resolucion, 'id');
 });

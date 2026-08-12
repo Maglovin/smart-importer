@@ -41,24 +41,26 @@ function claveNatural(table: DbTable): string | null {
 /** Convierte el jsonb crudo del RPC en DbSchema tipado. */
 export function parseSchemaRaw(raw: unknown): DbSchema {
   if (!Array.isArray(raw)) return [];
-  const tablas: DbTable[] = raw.map((t: any) => {
-    const table: DbTable = {
-      nombre: t.tabla,
-      columnas: (t.columnas ?? []) as DbColumn[],
-      fks: (t.fks ?? []).map((fk: any) => ({
-        nombre: fk.nombre,
-        columna: fk.columna,
-        tabla_ref: fk.tabla_ref,
-        columna_ref: fk.columna_ref,
-      })) as DbForeignKey[],
-    };
-    // Asignar clave natural a cada FK que apunte a una tabla conocida
+  const tablas: DbTable[] = raw.map((t: any) => ({
+    nombre: t.tabla,
+    columnas: (t.columnas ?? []) as DbColumn[],
+    fks: (t.fks ?? []).map((fk: any) => ({
+      nombre: fk.nombre,
+      columna: fk.columna,
+      tabla_ref: fk.tabla_ref,
+      columna_ref: fk.columna_ref,
+    })) as DbForeignKey[],
+  }));
+  // Segundo pase: asignar clave natural a cada FK que apunte a una tabla
+  // conocida. NO se puede hacer dentro del map() anterior: ahí `tablas`
+  // aún no está inicializada (TDZ) y lanza "Cannot access 'tablas'
+  // before initialization".
+  for (const table of tablas) {
     for (const fk of table.fks) {
       const ref = tablas.find((x) => x.nombre === fk.tabla_ref);
       fk.columna_resolucion = ref ? (claveNatural(ref) ?? 'id') : 'id';
     }
-    return table;
-  });
+  }
   return tablas;
 }
 
