@@ -1,0 +1,21 @@
+{
+  "name": "@importador/cli",
+  "version": "0.1.0",
+  "description": "CLI del importador: probar en seco o importar un archivo contra un schema desde terminal.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "importador": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "demo": "node ./dist/index.js --demo"
+  },
+  "dependencies": {
+    "@importador/core": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.0"
+  }
+}

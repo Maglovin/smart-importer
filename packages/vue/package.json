@@ -1,0 +1,32 @@
+{
+  "name": "@importador/vue",
+  "version": "0.1.0",
+  "description": "Componente Vue 3 del importador: stepper subir → detectar → mapear → validar → importar.",
+  "type": "module",
+  "main": "./dist/importador-vue.umd.cjs",
+  "module": "./dist/importador-vue.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/importador-vue.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "vite build && vue-tsc -p tsconfig.json --emitDeclarationOnly"
+  },
+  "peerDependencies": {
+    "vue": "^3.4.0"
+  },
+  "dependencies": {
+    "@importador/core": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "vite": "^5.4.0",
+    "@vitejs/plugin-vue": "^5.1.0",
+    "vue": "^3.4.0",
+    "vue-tsc": "^2.0.0"
+  }
+}

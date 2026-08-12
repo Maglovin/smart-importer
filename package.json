@@ -1,0 +1,17 @@
+{
+  "name": "importador",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Importador inteligente de Excel/CSV: detección de columnas, mapeo declarativo y dry-run. Reusable en cualquier app.",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @importador/core && npm run build -w @importador/cli",
+    "test": "npm run test -w @importador/core",
+    "demo": "npm run demo -w @importador/cli"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

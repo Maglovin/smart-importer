@@ -1,0 +1,20 @@
+{
+  "name": "importador-demo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --host --port 4173"
+  },
+  "dependencies": {
+    "@importador/core": "file:../../packages/core",
+    "@importador/vue": "file:../../packages/vue",
+    "vue": "^3.4.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0",
+    "@vitejs/plugin-vue": "^5.1.0"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@importador/core",
+  "version": "0.1.0",
+  "description": "Motor de importación inteligente: detección de columnas, mapeo declarativo y dry-run para Excel/CSV.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --test --experimental-strip-types tests/ 2>/dev/null || node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "@types/node": "^20.14.0"
+  }
+}
