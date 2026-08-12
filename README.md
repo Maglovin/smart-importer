@@ -11,7 +11,7 @@ Motor de importación de datos **reutilizable en cualquier app**: detecta column
 > Nació del importador hardcodeado del histórico de un taller mecánico (FICHA CLIENTES.xlsx → clientes/vehículos/OTs) y abstrae la parte reutilizable: el mapeo pasa de ser **código** a ser **datos + UI**.
 
 ```
-npm test   # 19 tests (core + db)
+npm test   # 23 tests (9 core + 14 db, incl. integración con RPC real)
 ```
 
 ## ✨ Qué hace
@@ -161,14 +161,15 @@ const schemaClientes: ImportSchema = {
 Tipos soportados: `texto · numero · entero · fecha · telefono · patente · email · booleano`.
 Cada tipo trae su transformación (serial Excel → ISO, importe español, km con miles…) y validación. También admite `transform` y `validar` personalizados por campo, y `relacion` para resolver FKs.
 
-## 🧪 Tests
+## 🧪 Tests y calidad
 
 ```bash
-npm test                 # 9 tests core: transformadores, detección, mapeo, dry-run
-npm run test -w @importador/db   # 10 tests db: schema desde tabla, FKs, padres, dedupe, regresión TDZ
+npm test          # 9 core + 14 db (incl. integración con fixture del RPC real)
+npm run lint      # ESLint 9 + TypeScript estricto (0 warnings)
+npm run format    # Prettier
 ```
 
-CI (GitHub Actions) ejecuta build + tests en Node 20 y 22 en cada push/PR.
+CI (GitHub Actions) ejecuta lint + build + tests en Node 20 y 22 en cada push/PR.
 
 ## 🛣 Roadmap
 
@@ -178,6 +179,7 @@ CI (GitHub Actions) ejecuta build + tests en Node 20 y 22 en cada push/PR.
 - [x] `@importador/db`: esquema desde BD, FKs automáticas, creación de padres
 - [x] **Dedupe/upsert por clave natural** (evitar duplicados en la BD)
 - [x] CI (GitHub Actions, Node 20/22) + badges
+- [x] ESLint + Prettier + test de integración del adaptador (fixture RPC real)
 - [x] Demo standalone + Excel de ejemplo
 - [ ] Integración en producción (TallerApp: importador de histórico completo)
 - [ ] Google Sheets como origen

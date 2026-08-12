@@ -9,9 +9,15 @@
   "scripts": {
     "build": "npm run build -w @importador/core && npm run build -w @importador/db && npm run build -w @importador/vue && npm run build -w @importador/cli",
     "test": "npm run test -w @importador/core && npm run test -w @importador/db",
+    "lint": "eslint packages/ --max-warnings 20",
+    "format": "prettier --write \"packages/*/src/**/*.{ts,vue}\" \"packages/*/tests/**/*.mjs\"",
     "demo": "npm run demo -w @importador/cli"
   },
   "devDependencies": {
-    "typescript": "^5.5.4"
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^9.1.2",
+    "prettier": "^3.9.6",
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^8.67.0"
   }
 }

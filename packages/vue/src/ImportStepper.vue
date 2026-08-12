@@ -135,15 +135,17 @@ const columnasImportables = computed(() =>
 );
 
 const camposSinMapear = computed(() =>
-  props.schema.campos.filter(
-    (f) => !mapping.value.some((m) => m.fieldId === f.id),
-  ),
+  props.schema.campos.filter((f) => !mapping.value.some((m) => m.fieldId === f.id)),
 );
 
 function setFieldColumn(fieldId: string, columnName: string) {
   mapping.value = mapping.value.filter((m) => m.fieldId !== fieldId);
   if (columnName) {
-    mapping.value.push({ columnIndex: columns.value.findIndex((c) => c.nombre === columnName), columnName, fieldId });
+    mapping.value.push({
+      columnIndex: columns.value.findIndex((c) => c.nombre === columnName),
+      columnName,
+      fieldId,
+    });
   }
 }
 
@@ -157,9 +159,7 @@ function sugerirParaCampo(fieldId: string): string {
 function toggleColumna(colName: string, checked: boolean) {
   if (checked) {
     // Auto-mapear la columna al mejor campo libre
-    const field = props.schema.campos.find(
-      (f) => !mapping.value.some((m) => m.fieldId === f.id),
-    );
+    const field = props.schema.campos.find((f) => !mapping.value.some((m) => m.fieldId === f.id));
     if (field) setFieldColumn(field.id, colName);
   } else {
     mapping.value = mapping.value.filter((m) => m.columnName !== colName);
@@ -187,9 +187,7 @@ async function confirmarImportacion() {
   if (!parsed.value || !result.value) return;
   importando.value = true;
   try {
-    const filas = result.value.rows
-      .filter((r) => !r.hasErrors)
-      .map((r) => r.data);
+    const filas = result.value.rows.filter((r) => !r.hasErrors).map((r) => r.data);
     if (props.onImport) {
       await props.onImport(filas, result.value);
     }
@@ -264,7 +262,10 @@ function reiniciar() {
 
       <div v-if="sheetNamesList.length > 1" class="imp-hoja">
         <label>Hoja a importar</label>
-        <select :value="sheetIndex" @change="onSheetChange(Number(($event.target as HTMLSelectElement).value))">
+        <select
+          :value="sheetIndex"
+          @change="onSheetChange(Number(($event.target as HTMLSelectElement).value))"
+        >
           <option v-for="(s, i) in sheetNamesList" :key="s" :value="i">{{ s }}</option>
         </select>
       </div>
@@ -306,11 +307,7 @@ function reiniciar() {
             @change="setFieldColumn(f.id, ($event.target as HTMLSelectElement).value)"
           >
             <option value="">— no importar —</option>
-            <option
-              v-for="c in columns"
-              :key="c.nombre"
-              :value="c.nombre"
-            >
+            <option v-for="c in columns" :key="c.nombre" :value="c.nombre">
               {{ c.nombre }}
               <template v-if="sugerirParaCampo(f.id) === c.nombre">⭐</template>
             </option>
@@ -333,9 +330,15 @@ function reiniciar() {
     <!-- ══ PASO 3: validación ══ -->
     <div v-else-if="paso === 3 && result" class="imp-panel">
       <div class="imp-resumen">
-        <div class="imp-stat ok"><strong>{{ result.validRows }}</strong> válidas</div>
-        <div class="imp-stat err"><strong>{{ result.errorRows }}</strong> con error</div>
-        <div class="imp-stat warn"><strong>{{ warnings.length }}</strong> avisos</div>
+        <div class="imp-stat ok">
+          <strong>{{ result.validRows }}</strong> válidas
+        </div>
+        <div class="imp-stat err">
+          <strong>{{ result.errorRows }}</strong> con error
+        </div>
+        <div class="imp-stat warn">
+          <strong>{{ warnings.length }}</strong> avisos
+        </div>
       </div>
 
       <p class="imp-seccion-titulo">Primeras filas procesadas</p>
@@ -348,7 +351,11 @@ function reiniciar() {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(row, i) in result.rows.slice(0, 10)" :key="i" :class="{ 'fila-error': row.hasErrors }">
+            <tr
+              v-for="(row, i) in result.rows.slice(0, 10)"
+              :key="i"
+              :class="{ 'fila-error': row.hasErrors }"
+            >
               <td>{{ i + 2 }}</td>
               <td v-for="f in props.schema.campos" :key="f.id">
                 {{ row.data[f.id] ?? '—' }}
@@ -388,7 +395,9 @@ function reiniciar() {
         <h3>¡Importación completada!</h3>
         <p>
           {{ result?.validRows }} filas importadas correctamente
-          <template v-if="result?.errorRows"> · {{ result.errorRows }} filas con errores omitidas</template>
+          <template v-if="result?.errorRows">
+            · {{ result.errorRows }} filas con errores omitidas</template
+          >
         </p>
         <button class="imp-btn primario" @click="reiniciar">Importar otro archivo</button>
       </div>
@@ -398,81 +407,362 @@ function reiniciar() {
 
 <style scoped>
 .importador {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    sans-serif;
   color: #1a1a2e;
   max-width: 860px;
   margin: 0 auto;
 }
-.imp-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; gap: 16px; flex-wrap: wrap; }
-.imp-titulo { margin: 0; font-size: 1.15rem; font-weight: 650; }
-.imp-desc { margin: 4px 0 0; color: #6b7280; font-size: 0.85rem; }
-.imp-pasos { display: flex; gap: 6px; flex-wrap: wrap; }
-.imp-paso { font-size: 0.72rem; padding: 4px 10px; border-radius: 999px; background: #f3f4f6; color: #9ca3af; }
-.imp-paso.activo { background: #e0e7ff; color: #4338ca; font-weight: 600; }
-.imp-paso.hecho { background: #d1fae5; color: #047857; }
+.imp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.imp-titulo {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 650;
+}
+.imp-desc {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+.imp-pasos {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.imp-paso {
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+.imp-paso.activo {
+  background: #e0e7ff;
+  color: #4338ca;
+  font-weight: 600;
+}
+.imp-paso.hecho {
+  background: #d1fae5;
+  color: #047857;
+}
 
-.imp-panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 20px; box-shadow: 0 1px 3px rgb(0 0 0 / 0.04); }
-.imp-error { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; font-size: 0.85rem; }
+.imp-panel {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.04);
+}
+.imp-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+}
 
-.imp-drop { border: 2px dashed #d1d5db; border-radius: 14px; padding: 36px 20px; text-align: center; cursor: pointer; transition: all 0.15s; }
-.imp-drop.over, .imp-drop:hover { border-color: #6366f1; background: #f5f6ff; }
-.imp-hidden { display: none; }
-.imp-drop-icon { font-size: 2.2rem; margin-bottom: 8px; }
-.imp-drop-text { margin: 0 0 6px; font-size: 0.95rem; }
-.imp-drop-sub { margin: 0; color: #9ca3af; font-size: 0.8rem; }
-.imp-hoja { margin-top: 14px; }
-.imp-hoja label { font-size: 0.8rem; color: #6b7280; margin-right: 8px; }
-.imp-hoja select, .imp-mapeo select { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 0.85rem; background: #fff; }
-.imp-cargando { margin-top: 12px; color: #6366f1; font-size: 0.85rem; text-align: center; }
+.imp-drop {
+  border: 2px dashed #d1d5db;
+  border-radius: 14px;
+  padding: 36px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.imp-drop.over,
+.imp-drop:hover {
+  border-color: #6366f1;
+  background: #f5f6ff;
+}
+.imp-hidden {
+  display: none;
+}
+.imp-drop-icon {
+  font-size: 2.2rem;
+  margin-bottom: 8px;
+}
+.imp-drop-text {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+.imp-drop-sub {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.8rem;
+}
+.imp-hoja {
+  margin-top: 14px;
+}
+.imp-hoja label {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-right: 8px;
+}
+.imp-hoja select,
+.imp-mapeo select {
+  padding: 6px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  background: #fff;
+}
+.imp-cargando {
+  margin-top: 12px;
+  color: #6366f1;
+  font-size: 0.85rem;
+  text-align: center;
+}
 
-.imp-filebar { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #374151; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px 12px; margin-bottom: 16px; }
-.imp-link { background: none; border: none; color: #6366f1; cursor: pointer; font-size: 0.8rem; }
+.imp-filebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #374151;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 16px;
+}
+.imp-link {
+  background: none;
+  border: none;
+  color: #6366f1;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
 
-.imp-seccion-titulo { font-size: 0.85rem; font-weight: 600; color: #374151; margin: 18px 0 8px; }
-.imp-columnas { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
-.imp-columna { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 10px; font-size: 0.82rem; cursor: pointer; }
-.imp-columna:hover { border-color: #c7d2fe; }
-.imp-col-nombre { font-weight: 600; }
-.imp-chip { font-size: 0.65rem; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #6b7280; }
-.imp-chip.tipo-fecha { background: #ede9fe; color: #6d28d9; }
-.imp-chip.tipo-numero, .imp-chip.tipo-entero { background: #d1fae5; color: #047857; }
-.imp-chip.tipo-telefono, .imp-chip.tipo-patente { background: #dbeafe; color: #1d4ed8; }
-.imp-chip.tipo-email { background: #fce7f3; color: #be185d; }
-.imp-col-ej { color: #9ca3af; font-size: 0.72rem; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.imp-seccion-titulo {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 18px 0 8px;
+}
+.imp-columnas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+}
+.imp-columna {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.imp-columna:hover {
+  border-color: #c7d2fe;
+}
+.imp-col-nombre {
+  font-weight: 600;
+}
+.imp-chip {
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+.imp-chip.tipo-fecha {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+.imp-chip.tipo-numero,
+.imp-chip.tipo-entero {
+  background: #d1fae5;
+  color: #047857;
+}
+.imp-chip.tipo-telefono,
+.imp-chip.tipo-patente {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+.imp-chip.tipo-email {
+  background: #fce7f3;
+  color: #be185d;
+}
+.imp-col-ej {
+  color: #9ca3af;
+  font-size: 0.72rem;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-.imp-mapeo { display: flex; flex-direction: column; gap: 8px; }
-.imp-mapeo-fila { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid #e5e7eb; border-radius: 10px; }
-.imp-mapeo-campo { display: flex; flex-direction: column; gap: 2px; }
-.imp-mapeo-campo small { color: #9ca3af; font-size: 0.72rem; }
-.imp-requerido { font-size: 0.62rem; color: #b45309; background: #fef3c7; padding: 1px 7px; border-radius: 999px; width: fit-content; }
+.imp-mapeo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.imp-mapeo-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+.imp-mapeo-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.imp-mapeo-campo small {
+  color: #9ca3af;
+  font-size: 0.72rem;
+}
+.imp-requerido {
+  font-size: 0.62rem;
+  color: #b45309;
+  background: #fef3c7;
+  padding: 1px 7px;
+  border-radius: 999px;
+  width: fit-content;
+}
 
-.imp-aviso { margin-top: 12px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 0.8rem; padding: 8px 12px; border-radius: 8px; }
-.imp-acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
-.imp-btn { padding: 8px 16px; border-radius: 10px; border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
-.imp-btn.primario { background: #4f46e5; color: #fff; }
-.imp-btn.primario:hover:not(:disabled) { background: #4338ca; }
-.imp-btn.primario:disabled { background: #c7d2fe; cursor: not-allowed; }
-.imp-btn.secundario { background: #f3f4f6; color: #374151; }
-.imp-btn.secundario:hover { background: #e5e7eb; }
+.imp-aviso {
+  margin-top: 12px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  font-size: 0.8rem;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+.imp-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+.imp-btn {
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.imp-btn.primario {
+  background: #4f46e5;
+  color: #fff;
+}
+.imp-btn.primario:hover:not(:disabled) {
+  background: #4338ca;
+}
+.imp-btn.primario:disabled {
+  background: #c7d2fe;
+  cursor: not-allowed;
+}
+.imp-btn.secundario {
+  background: #f3f4f6;
+  color: #374151;
+}
+.imp-btn.secundario:hover {
+  background: #e5e7eb;
+}
 
-.imp-resumen { display: flex; gap: 10px; margin-bottom: 6px; }
-.imp-stat { flex: 1; text-align: center; padding: 14px; border-radius: 12px; font-size: 0.8rem; }
-.imp-stat strong { display: block; font-size: 1.4rem; }
-.imp-stat.ok { background: #ecfdf5; color: #047857; }
-.imp-stat.err { background: #fef2f2; color: #b91c1c; }
-.imp-stat.warn { background: #fffbeb; color: #b45309; }
+.imp-resumen {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.imp-stat {
+  flex: 1;
+  text-align: center;
+  padding: 14px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+.imp-stat strong {
+  display: block;
+  font-size: 1.4rem;
+}
+.imp-stat.ok {
+  background: #ecfdf5;
+  color: #047857;
+}
+.imp-stat.err {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.imp-stat.warn {
+  background: #fffbeb;
+  color: #b45309;
+}
 
-.imp-tabla-wrap { overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 10px; }
-.imp-tabla { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-.imp-tabla th { background: #f9fafb; text-align: left; padding: 8px 10px; color: #6b7280; font-weight: 600; white-space: nowrap; }
-.imp-tabla td { padding: 7px 10px; border-top: 1px solid #f3f4f6; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.imp-tabla tr.fila-error td { background: #fef2f2; }
+.imp-tabla-wrap {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+.imp-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.imp-tabla th {
+  background: #f9fafb;
+  text-align: left;
+  padding: 8px 10px;
+  color: #6b7280;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.imp-tabla td {
+  padding: 7px 10px;
+  border-top: 1px solid #f3f4f6;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.imp-tabla tr.fila-error td {
+  background: #fef2f2;
+}
 
-.imp-errors { margin-top: 8px; }
-.imp-error-fila { font-size: 0.78rem; color: #b91c1c; padding: 5px 0; }
+.imp-errors {
+  margin-top: 8px;
+}
+.imp-error-fila {
+  font-size: 0.78rem;
+  color: #b91c1c;
+  padding: 5px 0;
+}
 
-.imp-exito { text-align: center; padding: 30px 0; }
-.imp-exito-icon { font-size: 2.6rem; margin-bottom: 10px; }
-.imp-exito h3 { margin: 0 0 6px; }
-.imp-exito p { color: #6b7280; font-size: 0.88rem; margin: 0 0 18px; }
+.imp-exito {
+  text-align: center;
+  padding: 30px 0;
+}
+.imp-exito-icon {
+  font-size: 2.6rem;
+  margin-bottom: 10px;
+}
+.imp-exito h3 {
+  margin: 0 0 6px;
+}
+.imp-exito p {
+  color: #6b7280;
+  font-size: 0.88rem;
+  margin: 0 0 18px;
+}
 </style>

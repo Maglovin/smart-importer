@@ -8,7 +8,7 @@
  * Lo mismo para `vehiculo_id` (por patente) y `mecanico_id` (por nombre).
  */
 
-import type { ImportSchema, RawValue, TargetField } from '@importador/core';
+import type { ImportSchema, TargetField } from '@importador/core';
 import type {
   DbAdapter,
   DbImportOptions,
@@ -40,10 +40,7 @@ export function tipoImportador(sqlType: string): TargetField['tipo'] {
  * campo; las columnas FK se marcan con `relacion` para que el sink las
  * resuelva contra la tabla referenciada.
  */
-export function schemaDesdeTabla(
-  tabla: DbTable,
-  opts: DbImportOptions = {},
-): TablaImportable {
+export function schemaDesdeTabla(tabla: DbTable, opts: DbImportOptions = {}): TablaImportable {
   const relacionadas = new Set<string>();
   const campos: TargetField[] = [];
 
@@ -54,9 +51,7 @@ export function schemaDesdeTabla(
     // Columna FK: se resuelve por la clave natural de la tabla referenciada
     if (fk) {
       const resolucion =
-        opts.resolucion?.[`${tabla.nombre}.${col.nombre}`] ??
-        fk.columna_resolucion ??
-        'id';
+        opts.resolucion?.[`${tabla.nombre}.${col.nombre}`] ?? fk.columna_resolucion ?? 'id';
       relacionadas.add(fk.tabla_ref);
       campos.push({
         id: col.nombre,
@@ -161,7 +156,15 @@ async function resolverRelacion(
 
   // El valor que tenemos es la clave natural → va en la columna de resolución
   const filaPadre: Record<string, unknown> = { [columna]: v };
-  const nuevoId = await insertarConRelaciones(adapter, padre, filaPadre, opts, cache, [...enProceso, camino], fkResueltos);
+  const nuevoId = await insertarConRelaciones(
+    adapter,
+    padre,
+    filaPadre,
+    opts,
+    cache,
+    [...enProceso, camino],
+    fkResueltos,
+  );
   cache.set(key, nuevoId);
   fkResueltos.set(fk.tabla_ref, nuevoId);
   return nuevoId;
@@ -206,9 +209,7 @@ export async function insertarConRelaciones(
       const valor = fila[col.nombre];
       if (valor === null || valor === undefined || valor === '') continue;
       const resolucion =
-        resolucionOverrides[`${tabla.nombre}.${col.nombre}`] ??
-        fk.columna_resolucion ??
-        'id';
+        resolucionOverrides[`${tabla.nombre}.${col.nombre}`] ?? fk.columna_resolucion ?? 'id';
       const idPadre = await resolverRelacion(
         adapter,
         { tabla_ref: fk.tabla_ref, columna_resolucion: resolucion },
@@ -309,9 +310,9 @@ export async function importarEnTabla(
       const id = await insertarConRelaciones(adapter, tabla, fila, opts, cache);
       resumen.insertados++;
       resumen.ids.push(id);
-    } catch (e: any) {
+    } catch (e) {
       resumen.errores++;
-      resumen.detalle.push(`${e.message}`);
+      resumen.detalle.push(e instanceof Error ? e.message : String(e));
     }
   }
   return resumen;

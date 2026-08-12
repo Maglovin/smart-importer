@@ -85,8 +85,19 @@ test('suggestMappings: alias exactos y fuzzy', async () => {
   const schema = {
     nombre: 'clientes-test',
     campos: [
-      { id: 'nombre', label: 'Nombre', tipo: 'texto', requerido: true, alias: ['nombre', 'name', 'cliente'] },
-      { id: 'telefono', label: 'Teléfono', tipo: 'telefono', alias: ['telefono', 'tel', 'celular'] },
+      {
+        id: 'nombre',
+        label: 'Nombre',
+        tipo: 'texto',
+        requerido: true,
+        alias: ['nombre', 'name', 'cliente'],
+      },
+      {
+        id: 'telefono',
+        label: 'Teléfono',
+        tipo: 'telefono',
+        alias: ['telefono', 'tel', 'celular'],
+      },
       { id: 'dni', label: 'DNI', tipo: 'texto', alias: ['dni', 'documento'] },
     ],
   };
@@ -96,7 +107,9 @@ test('suggestMappings: alias exactos y fuzzy', async () => {
     { nombre: 'DOCUMENTO', tipoInferido: 'texto', cobertura: 1, ejemplos: ['28'], indice: 2 },
   ];
   const suggs = suggestMappings(columns, schema);
-  assert.ok(suggs.some((s) => s.columnName === 'NOMBRE' && s.fieldId === 'nombre' && s.confidence === 1));
+  assert.ok(
+    suggs.some((s) => s.columnName === 'NOMBRE' && s.fieldId === 'nombre' && s.confidence === 1),
+  );
   assert.ok(suggs.some((s) => s.columnName === 'TEL' && s.fieldId === 'telefono'));
   assert.ok(suggs.some((s) => s.columnName === 'DOCUMENTO' && s.fieldId === 'dni'));
 });

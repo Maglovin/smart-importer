@@ -20,7 +20,12 @@ export function inferValueType(v: RawValue): FieldType {
   if (!s) return 'texto';
 
   // Patente Argentina/Chile: AB123CD / ABC123 / ABCD12
-  if (/^[A-Z]{2,3}\d{2,3}[A-Z]{0,2}$/i.test(s) && /[A-Za-z]/.test(s) && /\d/.test(s) && s.length >= 5) {
+  if (
+    /^[A-Z]{2,3}\d{2,3}[A-Z]{0,2}$/i.test(s) &&
+    /[A-Za-z]/.test(s) &&
+    /\d/.test(s) &&
+    s.length >= 5
+  ) {
     return 'patente';
   }
   // Email
@@ -30,7 +35,7 @@ export function inferValueType(v: RawValue): FieldType {
   // Fecha ISO o DD/MM/YYYY o DD-MM-YYYY o serial Excel
   if (
     /^\d{4}-\d{2}-\d{2}/.test(s) ||
-    /^\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}$/.test(s) ||
+    /^\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4}$/.test(s) ||
     /^\d{5}$/.test(s)
   ) {
     return 'fecha';

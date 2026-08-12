@@ -1,0 +1,364 @@
+[
+  {
+    "fks": [],
+    "orden": 1,
+    "tabla": "clientes",
+    "columnas": [
+      {
+        "pk": true,
+        "tipo": "uuid",
+        "nombre": "id",
+        "ordinal": 1,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "nombre",
+        "ordinal": 2,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "telefono",
+        "ordinal": 3,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "email",
+        "ordinal": 4,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "direccion",
+        "ordinal": 5,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "notas",
+        "ordinal": 6,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "timestamp with time zone",
+        "nombre": "created_at",
+        "ordinal": 7,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "timestamp with time zone",
+        "nombre": "updated_at",
+        "ordinal": 8,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "dni",
+        "ordinal": 9,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "apodo",
+        "ordinal": 10,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "dni_cif",
+        "ordinal": 11,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "conyuge",
+        "ordinal": 12,
+        "generada": false,
+        "not_null": false
+      }
+    ]
+  },
+  {
+    "fks": [
+      {
+        "nombre": "ordenes_trabajo_vehiculo_id_fkey",
+        "columna": "vehiculo_id",
+        "ordinal": 1,
+        "tabla_ref": "vehiculos",
+        "columna_ref": "id"
+      },
+      {
+        "nombre": "ordenes_trabajo_cliente_id_fkey",
+        "columna": "cliente_id",
+        "ordinal": 1,
+        "tabla_ref": "clientes",
+        "columna_ref": "id"
+      },
+      {
+        "nombre": "ordenes_trabajo_mecanico_id_fkey",
+        "columna": "mecanico_id",
+        "ordinal": 1,
+        "tabla_ref": "perfiles",
+        "columna_ref": "id"
+      },
+      {
+        "nombre": "ordenes_trabajo_cita_id_fkey",
+        "columna": "cita_id",
+        "ordinal": 1,
+        "tabla_ref": "citas",
+        "columna_ref": "id"
+      }
+    ],
+    "orden": 1,
+    "tabla": "ordenes_trabajo",
+    "columnas": [
+      {
+        "pk": true,
+        "tipo": "uuid",
+        "nombre": "id",
+        "ordinal": 1,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "numero_ot",
+        "ordinal": 2,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "uuid",
+        "nombre": "vehiculo_id",
+        "ordinal": 3,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "uuid",
+        "nombre": "cliente_id",
+        "ordinal": 4,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "uuid",
+        "nombre": "mecanico_id",
+        "ordinal": 5,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "ot_estado",
+        "nombre": "estado",
+        "ordinal": 6,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "timestamp with time zone",
+        "nombre": "fecha_ingreso",
+        "ordinal": 7,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "date",
+        "nombre": "fecha_prometida",
+        "ordinal": 8,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "timestamp with time zone",
+        "nombre": "fecha_entrega",
+        "ordinal": 9,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "descripcion_problema",
+        "ordinal": 10,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "diagnostico",
+        "ordinal": 11,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "integer",
+        "nombre": "kilometraje_ingreso",
+        "ordinal": 12,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "notas_internas",
+        "ordinal": 13,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "numeric(10,2)",
+        "nombre": "total_estimado",
+        "ordinal": 14,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "numeric(10,2)",
+        "nombre": "total_final",
+        "ordinal": 15,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "timestamp with time zone",
+        "nombre": "created_at",
+        "ordinal": 16,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "timestamp with time zone",
+        "nombre": "updated_at",
+        "ordinal": 17,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "date",
+        "nombre": "fecha_pago",
+        "ordinal": 18,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "uuid",
+        "nombre": "cita_id",
+        "ordinal": 19,
+        "generada": false,
+        "not_null": false
+      }
+    ]
+  },
+  {
+    "fks": [],
+    "orden": 1,
+    "tabla": "perfiles",
+    "columnas": [
+      {
+        "pk": true,
+        "tipo": "uuid",
+        "nombre": "id",
+        "ordinal": 1,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "email",
+        "ordinal": 2,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "full_name",
+        "ordinal": 3,
+        "generada": false,
+        "not_null": false
+      },
+      {
+        "pk": false,
+        "tipo": "text",
+        "nombre": "role",
+        "ordinal": 4,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "numeric(10,2)",
+        "nombre": "coste_hora",
+        "ordinal": 5,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "boolean",
+        "nombre": "activo",
+        "ordinal": 6,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "timestamp with time zone",
+        "nombre": "created_at",
+        "ordinal": 7,
+        "generada": false,
+        "not_null": true
+      },
+      {
+        "pk": false,
+        "tipo": "timestamp with time zone",
+        "nombre": "updated_at",
+        "ordinal": 8,
+        "generada": false,
+        "not_null": true
+      }
+    ]
+  }
+]

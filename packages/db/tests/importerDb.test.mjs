@@ -33,7 +33,15 @@ const esquemaTaller = [
       { nombre: 'patente', tipo: 'text', not_null: true, pk: false, generada: false },
       { nombre: 'marca', tipo: 'text', not_null: false, pk: false, generada: false },
     ],
-    fks: [{ nombre: 'vehiculos_cliente_id_fkey', columna: 'cliente_id', tabla_ref: 'clientes', columna_ref: 'id', columna_resolucion: 'nombre' }],
+    fks: [
+      {
+        nombre: 'vehiculos_cliente_id_fkey',
+        columna: 'cliente_id',
+        tabla_ref: 'clientes',
+        columna_ref: 'id',
+        columna_resolucion: 'nombre',
+      },
+    ],
   },
   {
     nombre: 'ordenes_trabajo',
@@ -46,8 +54,20 @@ const esquemaTaller = [
       { nombre: 'created_at', tipo: 'timestamp', not_null: true, pk: false, generada: true },
     ],
     fks: [
-      { nombre: 'ot_cliente_fkey', columna: 'cliente_id', tabla_ref: 'clientes', columna_ref: 'id', columna_resolucion: 'nombre' },
-      { nombre: 'ot_vehiculo_fkey', columna: 'vehiculo_id', tabla_ref: 'vehiculos', columna_ref: 'id', columna_resolucion: 'patente' },
+      {
+        nombre: 'ot_cliente_fkey',
+        columna: 'cliente_id',
+        tabla_ref: 'clientes',
+        columna_ref: 'id',
+        columna_resolucion: 'nombre',
+      },
+      {
+        nombre: 'ot_vehiculo_fkey',
+        columna: 'vehiculo_id',
+        tabla_ref: 'vehiculos',
+        columna_ref: 'id',
+        columna_resolucion: 'patente',
+      },
     ],
   },
 ];
@@ -72,9 +92,16 @@ class MockAdapter {
 
   async buscarId(tabla, columna, valor) {
     const filas = this.tablas.get(tabla) ?? new Map();
-    const v = String(valor ?? '').trim().toLowerCase();
+    const v = String(valor ?? '')
+      .trim()
+      .toLowerCase();
     for (const row of filas.values()) {
-      if (String(row[columna] ?? '').trim().toLowerCase() === v) return row.id;
+      if (
+        String(row[columna] ?? '')
+          .trim()
+          .toLowerCase() === v
+      )
+        return row.id;
     }
     return null;
   }
@@ -98,8 +125,14 @@ class MockAdapter {
   async buscarDuplicado(tabla, claves) {
     const filas = this.tablas.get(tabla) ?? new Map();
     for (const row of filas.values()) {
-      const coincide = Object.entries(claves).every(([col, val]) =>
-        String(row[col] ?? '').trim().toLowerCase() === String(val ?? '').trim().toLowerCase(),
+      const coincide = Object.entries(claves).every(
+        ([col, val]) =>
+          String(row[col] ?? '')
+            .trim()
+            .toLowerCase() ===
+          String(val ?? '')
+            .trim()
+            .toLowerCase(),
       );
       if (coincide) return row.id;
     }
@@ -155,9 +188,19 @@ test('importarEnTabla: resuelve FKs y crea padres automáticamente', async () =>
   const ot = esquemaTaller.find((t) => t.nombre === 'ordenes_trabajo');
 
   const res = await importarEnTabla(adapter, ot, [
-    { cliente_id: 'JUAN PEREZ', vehiculo_id: 'AB123CD', descripcion: 'CAMBIO CORREA', total_final: 135.22 },
+    {
+      cliente_id: 'JUAN PEREZ',
+      vehiculo_id: 'AB123CD',
+      descripcion: 'CAMBIO CORREA',
+      total_final: 135.22,
+    },
     { cliente_id: 'JUAN PEREZ', vehiculo_id: 'AB123CD', descripcion: 'FRENOS', total_final: 88.5 },
-    { cliente_id: 'MARIA LOPEZ', vehiculo_id: 'CD456EF', descripcion: 'SERVICIO', total_final: 250 },
+    {
+      cliente_id: 'MARIA LOPEZ',
+      vehiculo_id: 'CD456EF',
+      descripcion: 'SERVICIO',
+      total_final: 250,
+    },
   ]);
 
   assert.equal(res.insertados, 3);
@@ -169,7 +212,9 @@ test('importarEnTabla: resuelve FKs y crea padres automáticamente', async () =>
   assert.equal(adapter.conteo('ordenes_trabajo'), 3);
 
   // Los ids insertados en OT apuntan a los padres creados
-  const clienteJuan = [...adapter.tablas.get('clientes').values()].find((c) => c.nombre === 'JUAN PEREZ');
+  const clienteJuan = [...adapter.tablas.get('clientes').values()].find(
+    (c) => c.nombre === 'JUAN PEREZ',
+  );
   const vehAb = [...adapter.tablas.get('vehiculos').values()].find((v) => v.patente === 'AB123CD');
   const ot1 = [...adapter.tablas.get('ordenes_trabajo').values()][0];
   assert.equal(ot1.cliente_id, clienteJuan.id);
@@ -182,9 +227,12 @@ test('crearRelacionados=false: no crea padres, omitidos con error', async () => 
   const adapter = new MockAdapter();
   const ot = esquemaTaller.find((t) => t.nombre === 'ordenes_trabajo');
 
-  const res = await importarEnTabla(adapter, ot, [
-    { cliente_id: 'NADIE EXISTE', vehiculo_id: 'XX999', descripcion: 'X' },
-  ], { crearRelacionados: false });
+  const res = await importarEnTabla(
+    adapter,
+    ot,
+    [{ cliente_id: 'NADIE EXISTE', vehiculo_id: 'XX999', descripcion: 'X' }],
+    { crearRelacionados: false },
+  );
 
   assert.equal(res.insertados, 0);
   assert.equal(adapter.conteo('clientes'), 0);
@@ -196,9 +244,14 @@ test('insertarConRelaciones: respeta transformaciones por columna', async () => 
   const adapter = new MockAdapter();
   const clientes = esquemaTaller.find((t) => t.nombre === 'clientes');
 
-  const id = await insertarConRelaciones(adapter, clientes, { nombre: '  juan  ' }, {
-    transform: { 'clientes.nombre': (v) => String(v).trim().toUpperCase() },
-  });
+  const id = await insertarConRelaciones(
+    adapter,
+    clientes,
+    { nombre: '  juan  ' },
+    {
+      transform: { 'clientes.nombre': (v) => String(v).trim().toUpperCase() },
+    },
+  );
 
   const fila = adapter.tablas.get('clientes').get(id);
   assert.equal(fila.nombre, 'JUAN');
@@ -215,7 +268,14 @@ test('parseSchemaRaw: parsea el jsonb del RPC y resuelve claves naturales (regre
       columnas: [
         { nombre: 'id', tipo: 'uuid', not_null: true, pk: true, generada: true, ordinal: 1 },
         { nombre: 'nombre', tipo: 'text', not_null: true, pk: false, generada: false, ordinal: 2 },
-        { nombre: 'telefono', tipo: 'text', not_null: false, pk: false, generada: false, ordinal: 3 },
+        {
+          nombre: 'telefono',
+          tipo: 'text',
+          not_null: false,
+          pk: false,
+          generada: false,
+          ordinal: 3,
+        },
       ],
       fks: [],
     },
@@ -224,11 +284,25 @@ test('parseSchemaRaw: parsea el jsonb del RPC y resuelve claves naturales (regre
       orden: 2,
       columnas: [
         { nombre: 'id', tipo: 'uuid', not_null: true, pk: true, generada: true, ordinal: 1 },
-        { nombre: 'cliente_id', tipo: 'uuid', not_null: true, pk: false, generada: false, ordinal: 2 },
+        {
+          nombre: 'cliente_id',
+          tipo: 'uuid',
+          not_null: true,
+          pk: false,
+          generada: false,
+          ordinal: 2,
+        },
         { nombre: 'patente', tipo: 'text', not_null: true, pk: false, generada: false, ordinal: 3 },
         { nombre: 'marca', tipo: 'text', not_null: false, pk: false, generada: false, ordinal: 4 },
       ],
-      fks: [{ nombre: 'vehiculos_cliente_id_fkey', columna: 'cliente_id', tabla_ref: 'clientes', columna_ref: 'id' }],
+      fks: [
+        {
+          nombre: 'vehiculos_cliente_id_fkey',
+          columna: 'cliente_id',
+          tabla_ref: 'clientes',
+          columna_ref: 'id',
+        },
+      ],
     },
   ];
 
@@ -256,11 +330,16 @@ test('dedupe: omite filas con clave repetida (no llena la BD de duplicados)', as
   const adapter = new MockAdapter();
   const vehiculos = esquemaTaller.find((t) => t.nombre === 'vehiculos');
 
-  const res = await importarEnTabla(adapter, vehiculos, [
-    { patente: 'AB123CD', marca: 'RENAULT', cliente_id: 'JUAN PEREZ' },
-    { patente: 'ab123cd', marca: 'RENAULT KANGOO', cliente_id: 'JUAN PEREZ' }, // duplicado (case-insensitive)
-    { patente: 'CD456EF', marca: 'FORD', cliente_id: 'MARIA LOPEZ' },
-  ], { dedupe: ['patente'] });
+  const res = await importarEnTabla(
+    adapter,
+    vehiculos,
+    [
+      { patente: 'AB123CD', marca: 'RENAULT', cliente_id: 'JUAN PEREZ' },
+      { patente: 'ab123cd', marca: 'RENAULT KANGOO', cliente_id: 'JUAN PEREZ' }, // duplicado (case-insensitive)
+      { patente: 'CD456EF', marca: 'FORD', cliente_id: 'MARIA LOPEZ' },
+    ],
+    { dedupe: ['patente'] },
+  );
 
   assert.equal(res.insertados, 2);
   assert.equal(res.duplicados, 1);
@@ -276,10 +355,15 @@ test('dedupe: clave incompleta en la fila → se inserta igual (no puede compara
   const adapter = new MockAdapter();
   const clientes = esquemaTaller.find((t) => t.nombre === 'clientes');
 
-  const res = await importarEnTabla(adapter, clientes, [
-    { nombre: 'JUAN PEREZ', telefono: '' }, // teléfono vacío → la clave no está completa
-    { nombre: 'MARIA LOPEZ', telefono: '' },
-  ], { dedupe: ['telefono'] });
+  const res = await importarEnTabla(
+    adapter,
+    clientes,
+    [
+      { nombre: 'JUAN PEREZ', telefono: '' }, // teléfono vacío → la clave no está completa
+      { nombre: 'MARIA LOPEZ', telefono: '' },
+    ],
+    { dedupe: ['telefono'] },
+  );
 
   // Sin clave completa no hay comparación posible → se insertan ambas
   assert.equal(res.insertados, 2);
@@ -291,10 +375,15 @@ test('dedupe + actualizarDuplicados: actualiza en vez de omitir (upsert por clav
   const adapter = new MockAdapter();
   const vehiculos = esquemaTaller.find((t) => t.nombre === 'vehiculos');
 
-  const res = await importarEnTabla(adapter, vehiculos, [
-    { patente: 'AB123CD', marca: 'RENAULT', cliente_id: 'JUAN PEREZ' },
-    { patente: 'AB123CD', marca: 'RENAULT KANGOO', cliente_id: 'JUAN PEREZ' }, // duplicado → actualiza
-  ], { dedupe: ['patente'], actualizarDuplicados: true });
+  const res = await importarEnTabla(
+    adapter,
+    vehiculos,
+    [
+      { patente: 'AB123CD', marca: 'RENAULT', cliente_id: 'JUAN PEREZ' },
+      { patente: 'AB123CD', marca: 'RENAULT KANGOO', cliente_id: 'JUAN PEREZ' }, // duplicado → actualiza
+    ],
+    { dedupe: ['patente'], actualizarDuplicados: true },
+  );
 
   assert.equal(res.insertados, 1);
   assert.equal(res.actualizados, 1);
@@ -309,11 +398,16 @@ test('dedupe multi-columna: requiere coincidencia en TODAS las claves', async ()
   const adapter = new MockAdapter();
   const clientes = esquemaTaller.find((t) => t.nombre === 'clientes');
 
-  const res = await importarEnTabla(adapter, clientes, [
-    { nombre: 'JUAN PEREZ', telefono: '3415551234' },
-    { nombre: 'JUAN PEREZ', telefono: '3415559999' }, // mismo nombre, otro teléfono → NO duplicado
-    { nombre: 'juan perez', telefono: '3415551234' }, // duplicado exacto (case-insensitive)
-  ], { dedupe: ['nombre', 'telefono'] });
+  const res = await importarEnTabla(
+    adapter,
+    clientes,
+    [
+      { nombre: 'JUAN PEREZ', telefono: '3415551234' },
+      { nombre: 'JUAN PEREZ', telefono: '3415559999' }, // mismo nombre, otro teléfono → NO duplicado
+      { nombre: 'juan perez', telefono: '3415551234' }, // duplicado exacto (case-insensitive)
+    ],
+    { dedupe: ['nombre', 'telefono'] },
+  );
 
   assert.equal(res.insertados, 2);
   assert.equal(res.duplicados, 1);

@@ -10,7 +10,10 @@
 import type { DbAdapter, DbColumn, DbForeignKey, DbSchema, DbTable } from '../types.js';
 
 export interface SupabaseLike {
-  rpc(fn: string, args?: Record<string, unknown>): Promise<{ data: unknown; error: { message: string } | null }>;
+  rpc(
+    fn: string,
+    args?: Record<string, unknown>,
+  ): Promise<{ data: unknown; error: { message: string } | null }>;
   from(tabla: string): SupabaseQuery;
 }
 
@@ -39,19 +42,34 @@ function claveNatural(table: DbTable): string | null {
   return col?.nombre ?? null;
 }
 
+/** Fila cruda del jsonb del RPC schema_importable (antes de validar). */
+interface SchemaRowRaw {
+  tabla?: string;
+  columnas?: DbColumn[];
+  fks?: Array<{
+    nombre?: string;
+    columna?: string;
+    tabla_ref?: string;
+    columna_ref?: string;
+  }>;
+}
+
 /** Convierte el jsonb crudo del RPC en DbSchema tipado. */
 export function parseSchemaRaw(raw: unknown): DbSchema {
   if (!Array.isArray(raw)) return [];
-  const tablas: DbTable[] = raw.map((t: any) => ({
-    nombre: t.tabla,
-    columnas: (t.columnas ?? []) as DbColumn[],
-    fks: (t.fks ?? []).map((fk: any) => ({
-      nombre: fk.nombre,
-      columna: fk.columna,
-      tabla_ref: fk.tabla_ref,
-      columna_ref: fk.columna_ref,
-    })) as DbForeignKey[],
-  }));
+  const tablas: DbTable[] = raw.map((t) => {
+    const row = (t ?? {}) as SchemaRowRaw;
+    return {
+      nombre: row.tabla ?? '',
+      columnas: (row.columnas ?? []) as DbColumn[],
+      fks: (row.fks ?? []).map((fk) => ({
+        nombre: fk.nombre ?? '',
+        columna: fk.columna ?? '',
+        tabla_ref: fk.tabla_ref ?? '',
+        columna_ref: fk.columna_ref ?? '',
+      })) as DbForeignKey[],
+    };
+  });
   // Segundo pase: asignar clave natural a cada FK que apunte a una tabla
   // conocida. NO se puede hacer dentro del map() anterior: ahí `tablas`
   // aún no está inicializada (TDZ) y lanza "Cannot access 'tablas'
@@ -90,11 +108,7 @@ export function supabaseAdapter(sb: SupabaseLike, rpcNombre = 'schema_importable
     },
 
     async insertar(tabla, fila): Promise<string> {
-      const { data, error } = await sb
-        .from(tabla)
-        .insert(fila)
-        .select('id')
-        .single();
+      const { data, error } = await sb.from(tabla).insert(fila).select('id').single();
       if (error) throw new Error(`${tabla}: ${error.message}`);
       return (data as { id: string }).id;
     },
@@ -115,12 +129,7 @@ export function supabaseAdapter(sb: SupabaseLike, rpcNombre = 'schema_importable
     },
 
     async actualizar(tabla, id, fila): Promise<void> {
-      const { error } = await sb
-        .from(tabla)
-        .update(fila)
-        .eq('id', id)
-        .select('id')
-        .single();
+      const { error } = await sb.from(tabla).update(fila).eq('id', id).select('id').single();
       if (error) throw new Error(`${tabla}: ${error.message}`);
     },
   };

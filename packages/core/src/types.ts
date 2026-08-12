@@ -24,14 +24,7 @@ export interface ParsedFile {
 
 /** Tipos de campo soportados por el motor. */
 export type FieldType =
-  | 'texto'
-  | 'numero'
-  | 'entero'
-  | 'fecha'
-  | 'telefono'
-  | 'patente'
-  | 'email'
-  | 'booleano';
+  'texto' | 'numero' | 'entero' | 'fecha' | 'telefono' | 'patente' | 'email' | 'booleano';
 
 /** Declaración de un campo objetivo que queremos importar. */
 export interface TargetField {

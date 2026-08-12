@@ -56,16 +56,14 @@ export class Importer {
     const map = new Map(mapping.map((m) => [m.fieldId, m]));
     const rows = this.capRows(file).rows;
 
-    const processed: ProcessedRow[] = rows.map((row, i) =>
-      this.processRow(row, i + 2, map), // +2: cabecera es fila 1
+    const processed: ProcessedRow[] = rows.map(
+      (row, i) => this.processRow(row, i + 2, map), // +2: cabecera es fila 1
     );
 
     const issues = processed.flatMap((r) => r.issues);
     const validRows = processed.filter((r) => !r.hasErrors);
     const errorRows = processed.filter((r) => r.hasErrors);
-    const unmappedColumns = file.headers.filter(
-      (h) => !mapping.some((m) => m.columnName === h),
-    );
+    const unmappedColumns = file.headers.filter((h) => !mapping.some((m) => m.columnName === h));
 
     return {
       totalRows: processed.length,
@@ -114,14 +112,18 @@ export class Importer {
     return { ...file, rows: file.rows.slice(0, max), rowCount: max };
   }
 
-  private processRow(row: RawRow, rowNumber: number, map: Map<string, ColumnMapping>): ProcessedRow {
+  private processRow(
+    row: RawRow,
+    rowNumber: number,
+    map: Map<string, ColumnMapping>,
+  ): ProcessedRow {
     const data: Record<string, RawValue> = {};
     const issues: ProcessedRow['issues'] = [];
     let hasErrors = false;
 
     for (const field of this.schema.campos) {
       const mapping = map.get(field.id);
-      const raw = mapping ? row[mapping.columnName] ?? null : null;
+      const raw = mapping ? (row[mapping.columnName] ?? null) : null;
 
       // Transformación estándar por tipo + custom
       let value: RawValue = raw;
@@ -144,7 +146,13 @@ export class Importer {
         hasErrors = true;
       } else if (value !== null && value !== '') {
         // Advertencia si el valor crudo no se pudo transformar (quedó igual)
-        if (field.tipo !== 'texto' && raw !== null && typeof raw === 'string' && raw.trim() !== '' && value === raw) {
+        if (
+          field.tipo !== 'texto' &&
+          raw !== null &&
+          typeof raw === 'string' &&
+          raw.trim() !== '' &&
+          value === raw
+        ) {
           issues.push({
             rowNumber,
             fieldId: field.id,

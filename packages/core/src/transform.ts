@@ -55,7 +55,7 @@ export function parseNumberES(v: RawValue, opts: { miles?: boolean } = {}): numb
     }
   }
 
-  let s2 = s.replace(/[^\d,.\-]/g, '');
+  let s2 = s.replace(/[^\d,.-]/g, '');
   if (!s2) return null;
 
   // Desambiguar coma/punto: el último separador que aparece es el decimal
@@ -102,10 +102,40 @@ export function normalizaNombre(v: RawValue): string | null {
 }
 
 const MARCAS = [
-  'RENAULT', 'RENAUL', 'FORD', 'SEAT', 'VOLKSWAGEN', 'VW', 'W', 'OPEL', 'PEUGEOT',
-  'CITROEN', 'TOYOTA', 'NISSAN', 'HYUNDAI', 'KIA', 'BMW', 'MERCEDES-BENZ', 'M BENZ',
-  'MERCEDES', 'AUDI', 'SKODA', 'FIAT', 'MITSUBISHI', 'SUZUKI', 'DACIA', 'LAND ROVER',
-  'SANYONG', 'SSANGYONG', 'CHEVROLET', 'HONDA', 'MAZDA', 'VOLVO', 'MINI', 'JEEP', 'IVECO',
+  'RENAULT',
+  'RENAUL',
+  'FORD',
+  'SEAT',
+  'VOLKSWAGEN',
+  'VW',
+  'W',
+  'OPEL',
+  'PEUGEOT',
+  'CITROEN',
+  'TOYOTA',
+  'NISSAN',
+  'HYUNDAI',
+  'KIA',
+  'BMW',
+  'MERCEDES-BENZ',
+  'M BENZ',
+  'MERCEDES',
+  'AUDI',
+  'SKODA',
+  'FIAT',
+  'MITSUBISHI',
+  'SUZUKI',
+  'DACIA',
+  'LAND ROVER',
+  'SANYONG',
+  'SSANGYONG',
+  'CHEVROLET',
+  'HONDA',
+  'MAZDA',
+  'VOLVO',
+  'MINI',
+  'JEEP',
+  'IVECO',
 ];
 
 /** Abreviaturas comunes -> marca canónica (el histórico usaba 'REN'). */
@@ -145,7 +175,9 @@ export function separaMarcaModelo(modelo: RawValue): [string, string] {
 export function limpiaTelefono(v: RawValue): string | null {
   const t = limpia(v);
   if (t === null) return null;
-  return String(t).replace(/[^\d+ ]/g, '').trim();
+  return String(t)
+    .replace(/[^\d+ ]/g, '')
+    .trim();
 }
 
 export function limpiaPatente(v: RawValue): string | null {
@@ -172,10 +204,10 @@ export function normalizaFecha(v: RawValue): string | null {
   // ISO
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
   // DD/MM/YYYY o DD-MM-YYYY
-  const m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+  const m = s.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})$/);
   if (m) {
-    let [_, dd, mm, yyyy] = m;
-    let year = yyyy.length === 2 ? '20' + yyyy : yyyy;
+    const [, dd, mm, yyyy] = m;
+    const year = yyyy.length === 2 ? '20' + yyyy : yyyy;
     return `${year}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
   }
   return null;
@@ -195,7 +227,10 @@ export const TRANSFORMS: Record<string, (v: RawValue) => RawValue> = {
     if (t === null) return null;
     if (typeof t === 'boolean') return t;
     const s = String(t).toLowerCase();
-    return ['si', 'sí', 'yes', 'true', '1', 'x', 'ok'].includes(s) ? true :
-           ['no', 'false', '0', ''].includes(s) ? false : t;
+    return ['si', 'sí', 'yes', 'true', '1', 'x', 'ok'].includes(s)
+      ? true
+      : ['no', 'false', '0', ''].includes(s)
+        ? false
+        : t;
   },
 };

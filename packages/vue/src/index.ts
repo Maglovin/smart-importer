@@ -3,4 +3,10 @@
  */
 
 export { default as ImportStepper } from './ImportStepper.vue';
-export type { ImportSchema, ColumnMapping, DryRunResult, ParsedFile, DetectedColumn } from '@importador/core';
+export type {
+  ImportSchema,
+  ColumnMapping,
+  DryRunResult,
+  ParsedFile,
+  DetectedColumn,
+} from '@importador/core';

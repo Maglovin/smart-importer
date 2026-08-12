@@ -3,14 +3,13 @@
  * CLI del importador.
  *
  * Uso:
- *   importador --file datos.xlsx --schema clientes --dry-run
- *   importador --file datos.csv  --schema ots --dry-run
+ *   importador --file datos.xlsx --schema clientes
  *   importador --file datos.csv  --schema ots --output resultado.json
  *   importador --demo             (genera un Excel de ejemplo y lo prueba)
  *
- * --dry-run: muestra el resumen sin escribir nada (por defecto).
- * --output:  además del resumen, escribe las filas válidas transformadas
- *            a un archivo JSON (la importación "real" a un destino).
+ * Sin --output: muestra el resumen sin escribir nada (dry-run, por defecto).
+ * Con --output: además del resumen, escribe las filas válidas transformadas
+ *               a un archivo JSON (la importación "real" a un destino).
  */
 
 import { readFile, writeFile } from 'node:fs/promises';
@@ -42,10 +41,10 @@ const HELP = `
 importador — Importación inteligente de Excel/CSV
 
 Uso:
-  importador --file <archivo> --schema <nombre> [--dry-run] [--output <json>] [--max-rows N]
+  importador --file <archivo> --schema <nombre> [--output <json>] [--max-rows N]
 
-  --dry-run   muestra el resumen sin escribir nada (por defecto)
   --output    escribe las filas válidas transformadas a un JSON (importa "de verdad")
+              (sin --output hace dry-run y no escribe nada)
 
 Schemas disponibles: ${Object.keys(SCHEMAS).join(', ')}
 `;
@@ -122,7 +121,6 @@ async function main() {
   const fileArg = argValue(args, '--file');
   const schemaArg = argValue(args, '--schema');
   const outputArg = argValue(args, '--output');
-  const dryRun = args.includes('--dry-run');
   const maxRows = parseInt(argValue(args, '--max-rows') ?? '10000', 10);
 
   if (!fileArg || !schemaArg) {
@@ -132,14 +130,15 @@ async function main() {
 
   const schema = SCHEMAS[schemaArg];
   if (!schema) {
-    console.error(`Schema '${schemaArg}' no existe. Disponibles: ${Object.keys(SCHEMAS).join(', ')}`);
+    console.error(
+      `Schema '${schemaArg}' no existe. Disponibles: ${Object.keys(SCHEMAS).join(', ')}`,
+    );
     process.exit(1);
   }
 
   const buffer = await readFile(resolve(fileArg));
   const ext = extname(fileArg).toLowerCase();
-  const parsed =
-    ext === '.csv' ? await parseCsvFile(buffer) : await parseXlsxFile(buffer);
+  const parsed = ext === '.csv' ? await parseCsvFile(buffer) : await parseXlsxFile(buffer);
 
   const p = procesar(parsed, schema, maxRows);
   mostrarDetalle(p, basename(fileArg));
@@ -175,8 +174,13 @@ EF789GH;;VF1XXXXXXX;TOYOTA COROLLA;CARLOS RUIZ;;(341) 555-1111;29111222;45310;;S
 
   const p = procesar(parsed, schemaOTs, 100);
   for (const c of p.columns) {
-    const ex = c.ejemplos.slice(0, 2).map((v) => `"${v}"`).join(', ');
-    console.log(`  • ${c.nombre}  (${c.tipoInferido}, ${Math.round(c.cobertura * 100)}% lleno)  ej: ${ex}`);
+    const ex = c.ejemplos
+      .slice(0, 2)
+      .map((v) => `"${v}"`)
+      .join(', ');
+    console.log(
+      `  • ${c.nombre}  (${c.tipoInferido}, ${Math.round(c.cobertura * 100)}% lleno)  ej: ${ex}`,
+    );
   }
 
   console.log('\nAuto-mapeo sugerido:');
@@ -185,7 +189,9 @@ EF789GH;;VF1XXXXXXX;TOYOTA COROLLA;CARLOS RUIZ;;(341) 555-1111;29111222;45310;;S
     console.log(`  ${mark} ${s.columnName} → ${s.fieldId}  (${Math.round(s.confidence * 100)}%)`);
   }
 
-  console.log(`\nDRY-RUN: ${p.result.validRows}/${p.result.totalRows} filas válidas, ${p.result.issueCount} problemas`);
+  console.log(
+    `\nDRY-RUN: ${p.result.validRows}/${p.result.totalRows} filas válidas, ${p.result.issueCount} problemas`,
+  );
   if (p.result.unmappedColumns.length) {
     console.log(`Sin mapear: ${p.result.unmappedColumns.join(', ')}`);
   }

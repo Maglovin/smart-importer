@@ -12,8 +12,20 @@ import type { DetectedColumn, ImportSchema, MappingSuggestion, TargetField } fro
 // ── Normalización de nombres ─────────────────────────────────────
 
 const MAP_ACCENTS: Record<string, string> = {
-  á: 'a', é: 'e', í: 'i', ó: 'o', ú: 'u', ü: 'u', ñ: 'n',
-  Á: 'a', É: 'e', Í: 'i', Ó: 'o', Ú: 'u', Ü: 'u', Ñ: 'n',
+  á: 'a',
+  é: 'e',
+  í: 'i',
+  ó: 'o',
+  ú: 'u',
+  ü: 'u',
+  ñ: 'n',
+  Á: 'a',
+  É: 'e',
+  Í: 'i',
+  Ó: 'o',
+  Ú: 'u',
+  Ü: 'u',
+  Ñ: 'n',
 };
 
 export function normalizeName(s: string): string {
@@ -82,7 +94,10 @@ export function suggestMappings(
   return suggestions.sort((a, b) => b.confidence - a.confidence);
 }
 
-function scoreField(col: DetectedColumn, field: TargetField): Omit<MappingSuggestion, 'columnIndex' | 'columnName'> {
+function scoreField(
+  col: DetectedColumn,
+  field: TargetField,
+): Omit<MappingSuggestion, 'columnIndex' | 'columnName'> {
   const colNorm = normalizeName(col.nombre);
   const fieldNorm = normalizeName(field.label);
   const aliases = (field.alias ?? []).map(normalizeName);
