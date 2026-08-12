@@ -1,28 +1,39 @@
-# 🧮 Importador
+# 🧮 Importador — importación inteligente de Excel/CSV
 
-Importación inteligente de Excel/CSV: **detecta columnas, sugiere el mapeo contra un schema declarativo y valida antes de importar**. Reutilizable en cualquier app.
+Motor de importación de datos **reutilizable en cualquier app**: detecta columnas del archivo, sugiere el mapeo contra un schema declarativo, transforma/valida con prueba en seco y — con `@importador/db` — **lee el esquema de tu base de datos y resuelve las relaciones (FKs) automáticamente**.
 
-Nació del importador hardcodeado del histórico de un taller (FICHA CLIENTES.xlsx → clientes/vehículos/OTs) y abstrae la parte reutilizable: el mapeo pasa de ser **código** a ser **datos/UI**.
+> Nació del importador hardcodeado del histórico de un taller mecánico (FICHA CLIENTES.xlsx → clientes/vehículos/OTs) y abstrae la parte reutilizable: el mapeo pasa de ser **código** a ser **datos + UI**.
+
+```
+npm test   # 15 tests (core + db)
+```
 
 ## ✨ Qué hace
 
-1. **Parse** `.xlsx` / `.xls` / `.csv` → filas normalizadas
-2. **Detecta columnas** → tipo inferido (fecha, teléfono, patente, importe…), cobertura, ejemplos
-3. **Auto-mapea** → cada columna contra los campos del schema (alias + fuzzy matching, con confianza 0-1)
-4. **Transforma y valida** → seriales Excel a fecha, importes `'135+220'` → 135.22, km `'181,854'` → 181854, etc. Errores a nivel de fila
-5. **Dry-run** → X válidas / Y errores / Z avisos + tabla de previsualización
-6. **Importa** → solo filas válidas, con callback de persistencia
+| Paso | Qué ocurre |
+|---|---|
+| **1. Parse** | Lee `.xlsx` / `.xls` / `.csv` → filas normalizadas |
+| **2. Detecta** | Infiere tipo de cada columna (fecha, teléfono, patente, importe…), cobertura y ejemplos |
+| **3. Auto-mapea** | Sugiere columna → campo del schema (alias + fuzzy matching con confianza 0–1) |
+| **4. Transforma y valida** | Seriales Excel → fecha ISO, importes `'135+220'` → 135.22, km `'181,854'` → 181854… Errores a nivel de fila |
+| **5. Dry-run** | X válidas / Y errores / Z avisos + tabla de previsualización |
+| **6. Importa** | Solo filas válidas, con callback de persistencia (BD, API, lo que sea) |
 
-## 🏗 Arquitectura (monorepo)
+**Bonus (`@importador/db`)**: importar en cualquier tabla de la BD sin escribir un schema a mano — las columnas y las FKs se detectan solas.
+
+## 🏗 Arquitectura (monorepo npm)
 
 ```
 packages/
   core/   → motor agnóstico de framework (Node + navegador)
-  vue/    → componente <ImportStepper> (Vue 3)
+            parse · detect · map · transform · dry-run · execute
+  db/     → integración con BD: lee tablas/columnas/FKs (adaptador Supabase),
+            genera el schema de cualquier tabla y resuelve relaciones al importar
+  vue/    → componente <ImportStepper> (Vue 3): subir → mapear → validar → listo
   cli/    → importador desde terminal (--dry-run / importar)
 examples/
-  demo-vue/ → demo standalone desplegable (Vite)
-  FICHA_CLIENTES.xlsx → archivo de ejemplo
+  demo-vue/          → demo standalone (Vite)
+  FICHA_CLIENTES.xlsx → archivo de ejemplo real
 ```
 
 ## 🚀 Uso rápido
@@ -31,23 +42,26 @@ examples/
 
 ```bash
 npm run build
-npm run demo                 # prueba con datos de ejemplo
+npm run demo                    # prueba con datos de ejemplo
+
 npx importador --file datos.xlsx --schema ots --dry-run
+npx importador --file datos.csv --schema clientes
 ```
 
-### Como librería (core)
+### Como librería (`@importador/core`)
 
 ```ts
 import { Importer, parseXlsxFile, mappingFromSuggestions, schemaOTs } from '@importador/core';
 
 const parsed = await parseXlsxFile(buffer);
 const importer = new Importer(schemaOTs);
-const suggs = importer.suggest(parsed);               // auto-mapeo
+const suggs = importer.suggest(parsed);                          // auto-mapeo
 const result = importer.dryRun(parsed, mappingFromSuggestions(suggs));
+
 console.log(`${result.validRows}/${result.totalRows} válidas`);
 ```
 
-### Componente Vue
+### Componente Vue (`@importador/vue`)
 
 ```vue
 <ImportStepper
@@ -56,6 +70,40 @@ console.log(`${result.validRows}/${result.totalRows} válidas`);
   :on-import="(filas) => miAPI.insertar(filas)"
 />
 ```
+
+## 🗄 Importación "por tabla" (`@importador/db`)
+
+El modo estrella: **conéctalo a tu base de datos y deja que descubra el esquema solo**.
+
+```ts
+import { supabaseAdapter, schemaDesdeTabla, importarEnTabla } from '@importador/db';
+
+const adapter = supabaseAdapter(supabase);      // RPC schema_importable + REST
+
+// 1. Lee el esquema: tablas, columnas, tipos y FKs
+const esquema = await adapter.leerEsquema();
+
+// 2. Elige una tabla → el schema de importación se genera solo
+const tabla = esquema.find((t) => t.nombre === 'ordenes_trabajo');
+const importable = schemaDesdeTabla(tabla);
+//    → cliente_id, vehiculo_id… se marcan como relación
+//      (clientes.nombre, vehiculos.patente…)
+
+// 3. Importa: cada FK se resuelve por su clave natural
+//    y se CREA el registro padre si no existe (recursivamente)
+const res = await importarEnTabla(adapter, tabla, filas);
+// { insertados: 3, omitidos: 0, errores: 0, detalle: [], ids: [...] }
+```
+
+Qué resuelve por ti:
+
+- **FKs automáticas** — `cliente_id` se enlaza buscando `clientes.nombre` (o la primera columna de texto de la tabla referenciada); se puede sobreescribir con `opts.resolucion`.
+- **Creación de padres** — si el cliente/vehículo no existe, se crea (resolviendo a su vez SUS FKs, con detección de ciclos).
+- **Propagación de relaciones** — un vehículo creado desde una OT hereda el `cliente_id` ya resuelto de la OT.
+- **Cache entre filas** — una misma persona/patente repetida se resuelve una sola vez.
+- **`crearRelacionados: false`** — falla la fila en vez de crear padres (modo estricto).
+
+El RPC `schema_importable` lo provee cada app con una migración SQL (ejemplo en la sección de adapters).
 
 ## 📐 El contrato: schema declarativo
 
@@ -75,12 +123,14 @@ const schemaClientes: ImportSchema = {
 };
 ```
 
-Tipos soportados: `texto · numero · entero · fecha · telefono · patente · email · booleano`. Cada tipo trae su transformación (serial Excel → ISO, importe español, km con miles…) y validación. También admite `transform` y `validar` personalizados por campo.
+Tipos soportados: `texto · numero · entero · fecha · telefono · patente · email · booleano`.
+Cada tipo trae su transformación (serial Excel → ISO, importe español, km con miles…) y validación. También admite `transform` y `validar` personalizados por campo, y `relacion` para resolver FKs.
 
 ## 🧪 Tests
 
 ```bash
-npm test   # 9 tests: transformadores, detección, mapeo, dry-run
+npm test                 # 9 tests core: transformadores, detección, mapeo, dry-run
+npm run test -w @importador/db   # 6 tests db: schema desde tabla, FKs, padres, regresión TDZ
 ```
 
 ## 🛣 Roadmap
@@ -88,8 +138,13 @@ npm test   # 9 tests: transformadores, detección, mapeo, dry-run
 - [x] Core: parse, detect, map, transform, dry-run, execute
 - [x] CLI con schemas de ejemplo (clientes / vehículos / ots)
 - [x] Componente Vue (stepper 4 pasos)
+- [x] `@importador/db`: esquema desde BD, FKs automáticas, creación de padres
 - [x] Demo standalone + Excel de ejemplo
-- [ ] Integración real en TallerApp (Supabase sink)
+- [ ] Integración en producción (TallerApp: importador de histórico completo)
 - [ ] Google Sheets como origen
 - [ ] Dedupe/upsert por clave (evitar duplicados)
-- [ ] Publicación npm (@importador/core, @importador/vue)
+- [ ] Publicación npm (`@importador/core`, `@importador/db`, `@importador/vue`)
+
+## 📄 Licencia
+
+MIT
