@@ -1,0 +1,99 @@
+/**
+ * Adaptador Supabase: lee el esquema vía un RPC (`schema_importable`)
+ * y hace búsquedas/inserciones por REST.
+ *
+ * El RPC lo provee cada app (migración SQL) — devuelve jsonb con:
+ *   [{ tabla, columnas: [{nombre, tipo, not_null, pk, generada}],
+ *      fks: [{nombre, columna, tabla_ref, columna_ref}] }]
+ */
+
+import type { DbAdapter, DbColumn, DbForeignKey, DbSchema, DbTable } from '../types.js';
+
+export interface SupabaseLike {
+  rpc(fn: string, args?: Record<string, unknown>): Promise<{ data: unknown; error: { message: string } | null }>;
+  from(tabla: string): SupabaseQuery;
+}
+
+export interface SupabaseQuery {
+  select(columns: string): SupabaseQuery;
+  eq(col: string, val: unknown): SupabaseQuery;
+  ilike(col: string, val: string): SupabaseQuery;
+  limit(n: number): SupabaseQuery;
+  single(): Promise<{ data: unknown; error: { message: string } | null }>;
+  insert(fila: Record<string, unknown>): SupabaseQuery;
+}
+
+/** Heurística: primera columna no-PK, no generada, de tipo texto — la
+ *  "clave natural" más probable (nombre, patente, email…). */
+const TIPOS_TEXTO = ['text', 'character varying', 'varchar', 'char', 'citext'];
+
+function claveNatural(table: DbTable): string | null {
+  const col = table.columnas.find(
+    (c) =>
+      !c.pk &&
+      !c.generada &&
+      TIPOS_TEXTO.some((t) => c.tipo.startsWith(t)) &&
+      !['created_at', 'updated_at'].includes(c.nombre),
+  );
+  return col?.nombre ?? null;
+}
+
+/** Convierte el jsonb crudo del RPC en DbSchema tipado. */
+export function parseSchemaRaw(raw: unknown): DbSchema {
+  if (!Array.isArray(raw)) return [];
+  const tablas: DbTable[] = raw.map((t: any) => {
+    const table: DbTable = {
+      nombre: t.tabla,
+      columnas: (t.columnas ?? []) as DbColumn[],
+      fks: (t.fks ?? []).map((fk: any) => ({
+        nombre: fk.nombre,
+        columna: fk.columna,
+        tabla_ref: fk.tabla_ref,
+        columna_ref: fk.columna_ref,
+      })) as DbForeignKey[],
+    };
+    // Asignar clave natural a cada FK que apunte a una tabla conocida
+    for (const fk of table.fks) {
+      const ref = tablas.find((x) => x.nombre === fk.tabla_ref);
+      fk.columna_resolucion = ref ? (claveNatural(ref) ?? 'id') : 'id';
+    }
+    return table;
+  });
+  return tablas;
+}
+
+/** Adaptador Supabase (RPC schema_importable + REST). */
+export function supabaseAdapter(sb: SupabaseLike, rpcNombre = 'schema_importable'): DbAdapter {
+  return {
+    async leerEsquema(): Promise<DbSchema> {
+      const { data, error } = await sb.rpc(rpcNombre);
+      if (error) throw new Error(`No se pudo leer el esquema: ${error.message}`);
+      return parseSchemaRaw(data);
+    },
+
+    async buscarId(tabla, columna, valor): Promise<string | null> {
+      const v = String(valor ?? '').trim();
+      if (!v) return null;
+      const { data, error } = await sb
+        .from(tabla)
+        .select('id')
+        .ilike(columna, v)
+        .limit(1)
+        .single()
+        // el single() lanza error si no hay filas → tratarlo como "no existe"
+        .catch(() => ({ data: null, error: null }));
+      if (error || !data) return null;
+      return (data as { id: string }).id;
+    },
+
+    async insertar(tabla, fila): Promise<string> {
+      const { data, error } = await sb
+        .from(tabla)
+        .insert(fila)
+        .select('id')
+        .single();
+      if (error) throw new Error(`${tabla}: ${error.message}`);
+      return (data as { id: string }).id;
+    },
+  };
+}

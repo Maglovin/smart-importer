@@ -47,6 +47,12 @@ export interface TargetField {
   alias?: string[];
   /** Descripción corta para la UI. */
   descripcion?: string;
+  /**
+   * Relación con otra tabla (FK): el importador resuelve el valor buscando
+   * en `tabla` por `columna` (y crea el registro si no existe).
+   * P.ej. `{ tabla: 'clientes', columna: 'nombre' }` en un campo `cliente_id`.
+   */
+  relacion?: { tabla: string; columna: string };
   /** Transformación personalizada (se ejecuta después de la estándar). */
   transform?: (valor: RawValue, fila: RawRow) => RawValue;
   /** Validación personalizada: devuelve mensaje de error o null si OK. */
